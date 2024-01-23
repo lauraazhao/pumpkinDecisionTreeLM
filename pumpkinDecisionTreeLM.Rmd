@@ -1,0 +1,61 @@
+---
+title: "PumpkinDecisionTreeLM"
+output: html_document
+date: "2024-01-02"
+---
+
+
+```{r}
+#Read in the data
+pumpkinsData <- read.csv("pumpkins_all_prices.csv", header=TRUE)
+head(pumpkinsData)
+```
+
+
+```{r}
+#Creating a training and testing set
+num_samples = dim(pumpkinsData) [1]
+sampling.rate=0.8
+
+training <- sample(1:num_samples, sampling.rate * num_samples, replace=FALSE)
+trainingSet <- subset(pumpkinsData[training, ])
+
+testing <- setdiff(1:num_samples, training)
+testingSet <- subset(pumpkinsData[testing, ])
+```
+
+
+```{r}
+#Create a decision tree learning model to predict pumpkin prices
+library(rpart)
+
+decTreeModel <- rpart(Price ~ ., data = trainingSet)
+
+#Create plots to see the initial decision tree
+plot(decTreeModel, margin = 0.1)
+plotcp(decTreeModel)
+
+##prune the tree at cp = 0.23
+prunedTree <- prune(decTreeModel, cp = 0.23)
+plot(prunedTree, margin=0.1)
+text(prunedTree, pretty=TRUE, cex = 0.5)
+
+```
+
+
+
+```{r}
+#Create predictions for pumpkin prices using the testing set
+predictions <- predict(prunedTree, testingSet)
+predictions
+
+#Calculate the mse value to evaluate how accurate the model is
+error = predictions - testingSet$Price
+mse = mean(error^2)
+
+#The value of MSE is around 2000
+mse
+```
+
+
+Decision trees are easy to visualize and in this situation, it allowed us to take all variables into account when predicting price without the need for encoding, unlike the linear regression which forced us to use dummy variables. On the other hand, the decision tree was prone to overfitting, as seen in the results of the predictions; the top 3 pumpkins generally have the same price because the decision tree was not general enough. As such, the results of the pruning only allowed for two possible price options, which poorly reflects the real world situation.
